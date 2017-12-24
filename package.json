@@ -1,0 +1,25 @@
+{
+  "name": "muggrab",
+  "version": "0.0.1",
+  "description": "Utility to grab mugshots from mugshots.newsherald.com",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "data",
+    "crawler"
+  ],
+  "author": "James Bearden <rorick@sf-n.com> (http://rorick.me)",
+  "license": "ISC",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.2",
+    "firstline": "^1.2.1",
+    "index.js": "0.0.3",
+    "phantom": "^4.0.11",
+    "prepend-file": "^1.3.1",
+    "q": "^1.5.1",
+    "stream": "0.0.2",
+    "util": "^0.10.3"
+  }
+}
