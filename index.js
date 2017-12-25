@@ -10,7 +10,7 @@ var resultsFile = 'collected.txt';
 var results = [];
 var first;
 var _ph, _page, _outObj;
-checkFile()
+checkFile();
 
 phantom.create([], { logLevel: 'error' }).then(ph => {
     _ph = ph;
@@ -57,7 +57,7 @@ function gatherPage(content) {
     		_ph.exit();
     		process.exit();
     	} else {
-    		return nextPage()
+    		return nextPage();
     	}
     })
 }
@@ -86,11 +86,11 @@ function checkPage() {
 			return document.getElementById('ContentPlaceHolder1_ddlPaging').value
 		})
 		return Promise.all([res, res2]).then(([res, res2]) => {
-			console.log('Scraping page: ' + res2 + ' of: ' + res)
+			console.log('Scraping page: ' + res2 + ' of: ' + res);
 			if (res === res2) {
-				resolve(true)
+				resolve(true);
 			} else {
-				resolve(false)
+				resolve(false);
 			}
 		})
 	})
@@ -104,30 +104,30 @@ function nextPage() {
 	}).then(() => {
 		return Q.delay(50);
 	}).then(() => {
-		return waitState(textPopulated)
+		return waitState(textPopulated);
 	})
 }
 
 function retrieveLast() {
 	return promise = new Promise(function(resolve, reject) {
 		let content = _page.property('content').then((content) => {
-			let $ = cheerio.load(content)
+			let $ = cheerio.load(content);
 			let name = $('.itemLink').last().find('.MugshotsName').text().trim().replace(/\W+/g," ");
 			let link  = $('.itemLink').last().attr('href');
 	    
-	    	resolve(res = '<' + link + '>' + name)
+	    	resolve(req = '<' + link + '>' + name);
 		})
 	})
 }
 
 function doesSpanExist() {
 	let exist = _page.evaluate(function () {
-		return document.getElementById('ContentPlaceHolder1_lblTotalPages').textContent
+		return document.getElementById('ContentPlaceHolder1_lblTotalPages').textContent;
 	})
 	if (exist && typeof exist !== 'null') {
-		return true
+		return true;
 	} else {
-		return false
+		return false;
 	}
 }
 
@@ -136,12 +136,12 @@ function textPopulated() {
 	    retrieveLast().then((res) => {
 	        if (res !== results[results.length - 1] && typeof res !== 'undefined') {
 	        	if (doesSpanExist()) {
-	        		resolve(true)
+	        		resolve(true);
 	        	} else {
-	        		resolve(false)
+	        		resolve(false);
 	        	}
 	        } else {
-	    		resolve(false)
+	    		resolve(false);
         	}
 	    })
 	})
@@ -160,9 +160,9 @@ function waitState(state, timeout) {  // timeout in seconds is optional
     	   if (res) {
  //          		console.log('Reached state!');
            		return Q.delay(250).then(() => {
-           			return _page.property('content')
+           			return _page.property('content');
            		}).then((content) => {
-           			return gatherPage(content)
+           			return gatherPage(content);
            		})
        		} else if (new Date() - startTime > limitTime) {
     	   		throw new Error('Timed out!');
