@@ -10,6 +10,7 @@ var resultsFile = 'collected.txt';
 var results = [];
 var first;
 var _ph, _page, _outObj;
+
 checkFile();
 
 phantom.create([], { logLevel: 'error' }).then(ph => {
@@ -21,44 +22,42 @@ phantom.create([], { logLevel: 'error' }).then(ph => {
 }).then(() => {
     return _page.property('content');
 }).then(content => {
+	console.log('Scraping data!')
 	return gatherPage(content);
 }).catch(err => console.log(err));
 
 function gatherPage(content) {
     let $ = cheerio.load(content);
     
-//    console.log('Scraping data!')
     // gather needed mugshot data and store in global results
     $('.itemLink').each(function(i) {
         let name = $(this).find('.MugshotsName').text().trim().replace(/\W+/g," ");
         let link  = $(this).attr('href');
         let result = '<' + link + '>' + name;
         
-        if (!first) {
-        	fs.appendFile(resultsFile,result + '\n', (err) => {if (err) {throw err}})
+        if (first === result) {
+        	console.log('Updating finished!');
+        	writeData();
+        	_page.close();
+        	_ph.exit();
+        	process.exit();
         } else {
-        	if (first === result) {
-        		console.log('Updating finished!');
-        		_page.close();
-        		_ph.exit();
-        		process.exit();
-        	} else {
-        		prependFile(resultsFile, result + '\n', (err) => {if (err) {throw err}})
+        	console.log('Scraped: ' + result)
+        	results.push(result)
+        	if (i === 5) {
+	        	checkPage().then((res) => {
+	            	if (res) {
+	            		console.log('Scraping finished!');
+	            		writeData();
+	            		_page.close();
+	            		_ph.exit();
+	            		process.exit();
+	            	} else {
+	            		return nextPage();
+	            	}
+	        	})
         	}
         }
-        
-        results.push(result);
-    })
-    // load next page
-    checkPage().then((res) => {
-    	if (res) {
-    		console.log('Scraping finished!');
-    		_page.close();
-    		_ph.exit();
-    		process.exit();
-    	} else {
-    		return nextPage();
-    	}
     })
 }
 
@@ -71,6 +70,7 @@ function checkFile() {
     		fl(resultsFile).then((res) => {
     			if (!first) {
     				first = res
+    				console.log('Updating to: ' + first)
     			}
     		})
     	}
@@ -78,7 +78,7 @@ function checkFile() {
 }
 
 function checkPage() {
-	return promise = new Promise(function(resolve, reject) {
+	return new Promise(function(resolve, reject) {
 		let res =_page.evaluate(function() {
 			return document.getElementById('ContentPlaceHolder1_lblTotalPages').textContent
 		})
@@ -87,7 +87,7 @@ function checkPage() {
 		})
 		return Promise.all([res, res2]).then(([res, res2]) => {
 			console.log('Scraping page: ' + res2 + ' of: ' + res);
-			if (res === res2) {
+			if (res === res2 && typeof res !== null) {
 				resolve(true);
 			} else {
 				resolve(false);
@@ -109,37 +109,43 @@ function nextPage() {
 }
 
 function retrieveLast() {
-	return promise = new Promise(function(resolve, reject) {
+	return new Promise(function(resolve, reject) {
 		let content = _page.property('content').then((content) => {
 			let $ = cheerio.load(content);
 			let name = $('.itemLink').last().find('.MugshotsName').text().trim().replace(/\W+/g," ");
 			let link  = $('.itemLink').last().attr('href');
 	    
-	    	resolve(req = '<' + link + '>' + name);
+	    	resolve('<' + link + '>' + name);
 		})
 	})
 }
 
 function doesSpanExist() {
-	let exist = _page.evaluate(function () {
-		return document.getElementById('ContentPlaceHolder1_lblTotalPages').textContent;
+	return new Promise(function(resolve, reject) {
+		let exist = _page.evaluate(function () {
+			return document.getElementById('ContentPlaceHolder1_lblTotalPages').textContent;
+		})
+		return exist.then((res) => {
+			if (res && typeof res !== null) {
+				resolve(true);
+			} else {
+				resolve(false);
+			}}
+		)
 	})
-	if (exist && typeof exist !== 'null') {
-		return true;
-	} else {
-		return false;
-	}
 }
 
 function textPopulated() {
-	return promise = new Promise(function (resolve, reject) {
+	return new Promise(function (resolve, reject) {
 	    retrieveLast().then((res) => {
 	        if (res !== results[results.length - 1] && typeof res !== 'undefined') {
-	        	if (doesSpanExist()) {
-	        		resolve(true);
-	        	} else {
-	        		resolve(false);
-	        	}
+	        	doesSpanExist().then((res) => {
+	        		if (res) {
+	        			resolve(true);
+	        		} else {
+	        			resolve(false);
+	        		}
+	        	})
 	        } else {
 	    		resolve(false);
         	}
@@ -158,8 +164,8 @@ function waitState(state, timeout) {  // timeout in seconds is optional
     function wait() {
        state().then((res) => {
     	   if (res) {
- //          		console.log('Reached state!');
-           		return Q.delay(250).then(() => {
+//           	console.log('Reached state!');
+           		return Q.delay(50).then(() => {
            			return _page.property('content');
            		}).then((content) => {
            			return gatherPage(content);
@@ -167,10 +173,19 @@ function waitState(state, timeout) {  // timeout in seconds is optional
        		} else if (new Date() - startTime > limitTime) {
     	   		throw new Error('Timed out!');
        		} else {
-       			return Q.delay(1000).then(() => {
+       			return Q.delay(50).then(() => {
        				return wait();
        			})
        		}
        	})
     }
+}
+
+function writeData() {
+	let chron = results.reverse();
+	console.log('Writing scraped data!')
+	
+	chron.forEach(function(element) {
+		prependFile.sync(resultsFile, element + '\n')
+	})
 }
